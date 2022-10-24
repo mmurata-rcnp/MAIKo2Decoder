@@ -52,15 +52,24 @@ namespace MAIKo2Decoder
                               << "Signal " << GetSignal(sWord3) << std::endl;
                 }
             }
+        }
+        else
+        {
+            fErrorLog << "Format error: The length of FADC data must be 2n, but that of this event is " << _words.size() << std::endl;
+        }
 
-            // Check validity
-            // 2 words == 1 clock
-            int signalLengthExpected = _words.size() / 2;
-            int signalLengthAccepted = fSignals.at(0).size();
-            if (signalLengthExpected == signalLengthAccepted)
-            {
-                fGood = true;
-            }
+        // Check validity
+        // 2 words == 1 clock && No error log ?
+        const int signalLengthExpected = _words.size() / 2;
+        const int signalLengthAccepted = fSignals.at(0).size();
+        if (signalLengthExpected == signalLengthAccepted &&
+            fErrorLog.str() == "")
+        {
+            fGood = true;
+        }
+        else
+        {
+            fGood = false;
         }
     }
 }

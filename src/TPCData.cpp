@@ -46,7 +46,7 @@ namespace MAIKo2Decoder
                 }
                 else
                 {
-                    fErrorLog << "Format Error in " << (it - _words.begin()) / 5 << " th clock " << std::endl;
+                    fErrorLog << "Format error in " << (it - _words.begin()) / 5 << " th clock " << std::endl;
                     fErrorLog << "    Header " << std::hex << headerWord << ", "
                               << "Format " << (0xffff0000 & headerWord) << " (== 0x80000000?), " << std::dec << std::endl;
                     fErrorLog << "    word1 " << std::dec << words.at(0) << std::dec << std::endl;
@@ -56,10 +56,18 @@ namespace MAIKo2Decoder
                 }
             }
         }
+        else
+        {
+            fErrorLog << "Format error: The length of TPC data must be 5n, but that of this event is " << _words.size() << std::endl;
+        }
         // Check Validity (No error log?)
         if (fErrorLog.str() == "")
         {
             fGood = true;
+        }
+        else
+        {
+            fGood = false;
         }
     }
 }
