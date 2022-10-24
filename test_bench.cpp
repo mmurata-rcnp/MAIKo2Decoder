@@ -15,32 +15,6 @@
 #include "CounterData.hpp"
 #include "FADCData.hpp"
 #include "TPCData.hpp"
-// class CounterData
-// {
-// public:
-//     CounterData(const std::vector<uint32_t> &_words)
-//         : fGood(false), fTriggerCounter(0), fClockCounter(0), fCounter2(0)
-//     {
-//         if (_words.size() == 3)
-//         {
-//             fGood = true;
-//             fTriggerCounter = _words.at(0);
-//             fClockCounter = _words.at(1);
-//             fCounter2 = _words.at(2);
-//         }
-//     }
-
-//     bool IsGood() const { return fGood; };
-//     uint32_t GetTriggerCounter() const { return fTriggerCounter; };
-//     uint32_t GetClockCounter() const { return fClockCounter; };
-//     uint32_t GetCounter2() const { return fCounter2; };
-
-// private:
-//     bool fGood;
-//     uint32_t fTriggerCounter;
-//     uint32_t fClockCounter;
-//     uint32_t fCounter2;
-// };
 
 template <typename T>
 std::string MakeAA(const std::vector<T> &_vals,
