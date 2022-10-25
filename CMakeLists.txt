@@ -34,6 +34,7 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hpp)
 
 add_executable(test_bench test_bench.cpp ${sources} ${headers})
 target_link_libraries(test_bench pqxx)
+target_link_libraries(test_bench pthread)
 # target_link_libraries(test_bench ${ROOT_LIBRARIES})
 # target_link_libraries(test_bench sqlite3)
 # target_link_libraries(test_bench uuid)
