@@ -18,6 +18,8 @@
 #include "FADCData.hpp"
 #include "TPCData.hpp"
 #include "EventWordsBuffer.hpp"
+#include "StreamRawData.hpp"
+#include "IndexTableFormat.hpp"
 
 template <typename T>
 std::string MakeAA(const std::vector<T> &_vals,
@@ -69,215 +71,11 @@ std::string MakeAA(const std::vector<T> &_vals,
     return tmp.str();
 }
 
-struct StreamRawDataInput
-{
-    std::string fileName;
-};
-
-struct StreamRawDataResult
-{
-    bool goodFlag = false;
-    bool fileNotFound = false;
-    bool noEventFound = false;
-    bool errorWhileSearchingEvent = false;
-    bool invalidHeader = false;
-    bool noEventFooter = false;
-    bool eventFormatError = false;
-    bool abortedByCallBack = false;
-    uint64_t number_of_events_processed = 0;
-};
-
-struct RawEventData
-{
-    uint64_t event_id;           // the order of the events in the file (begin from 1. Should be same to trigger counter)
-    uint64_t event_data_address; // the address (byte) of the event in raw data file
-    uint32_t event_data_length;  // the length of the word sequence in byte.
-    // uint32_t event_fadc_words_offset; // the order of the word where FADC data begins. 0 if no FADC data in the event.
-    // uint32_t event_tpc_words_offset;  // the order of the word where TPC data begins. 0 if no TPC data in the event.
-    // uint32_t event_clock_counter;     // the value of clock counter in CounterData
-    // uint32_t event_trigger_counter;   // the value of trigger counter in CounterData
-    MAIKo2Decoder::EventWordsBuffer words;
-    // MAIKo2Decoder::CounterData counter;
-    // MAIKo2Decoder::FADCData fadc;
-    // MAIKo2Decoder::TPCData tpc;
-};
-
-StreamRawDataResult StreamRawData(StreamRawDataInput _input,
-                                  std::function<bool(const RawEventData &)> _callBack)
-{
-    StreamRawDataResult result;
-    std::ifstream fIn(_input.fileName, std::ios::binary);
-
-    if (!fIn.good())
-    {
-        result.fileNotFound = true;
-        return result;
-    }
-
-    // Seek header of 1st event
-    while (true)
-    {
-        if (!fIn.good())
-        {
-            result.noEventFound = true;
-            return result;
-        }
-
-        MAIKo2Decoder::WordType word = MAIKo2Decoder::ReadNextWord(fIn);
-        if (word == MAIKo2Decoder::EventHeader) // 1 st event is found
-        {
-            fIn.seekg(-sizeof(MAIKo2Decoder::WordType), std::ios_base::cur); // back to the position of the header
-            break;
-        }
-    }
-
-    while (true)
-    {
-        RawEventData evt;
-        if (!fIn.good())
-        {
-            // std::cerr << "Error occurred while searching next event" << std::endl;
-            result.errorWhileSearchingEvent = true;
-            return result;
-        }
-
-        auto posHeader = fIn.tellg();
-        // Expect events begin from the header
-        MAIKo2Decoder::WordType wordHeader = MAIKo2Decoder::ReadNextWord(fIn);
-
-        if (fIn.eof())
-        {
-            break;
-        }
-        else if (wordHeader != MAIKo2Decoder::EventHeader)
-        {
-            // std::cerr << "Format error: Event header is expected. -> " << std::hex << wordHeader << std::endl;
-            result.invalidHeader = true;
-            return result;
-        }
-
-        // auto wordTriggerCounter = MAIKo2Decoder::ReadNextWord(fIn);
-        // auto wordClockCounter = MAIKo2Decoder::ReadNextWord(fIn);
-        // auto wordCounter2 = MAIKo2Decoder::ReadNextWord(fIn);
-
-        // Find event footer
-        while (true)
-        {
-            auto word = MAIKo2Decoder::ReadNextWord(fIn);
-            if (word == MAIKo2Decoder::EventFooter)
-            {
-                // strict check : next word must be the header or EOF
-                auto wordNext = MAIKo2Decoder::ReadNextWord(fIn);
-                if (wordNext == MAIKo2Decoder::EventHeader) // Events continue in the file
-                {
-                    fIn.seekg(-sizeof(uint32_t), std::ios_base::cur); // back to the position of the header
-                    break;
-                }
-                else if (fIn.eof()) // It is the last event
-                {
-                    fIn.clear(); // Release lock on the stream to keep good bit of the stream on.
-                    break;
-                }
-                else // NOT a event footer (TPC data ?) -> proceed with searching event footer
-                {
-                    continue;
-                }
-            }
-            else if (fIn.eof())
-            {
-                // std::cerr << "Format error: No event footer till the end of the file." << std::endl;
-                result.noEventFooter = true;
-                return result;
-            }
-        }
-
-        auto posFooter = fIn.tellg();
-
-        fIn.seekg(posHeader, std::ios_base::beg);
-        auto wordsEvent = MAIKo2Decoder::ReadNextWords(fIn, (posFooter - posHeader) / sizeof(MAIKo2Decoder::WordType));
-        ++result.number_of_events_processed;
-        evt.event_id = result.number_of_events_processed;
-        evt.event_data_address = posHeader;
-        evt.event_data_length = posFooter - posHeader;
-        evt.words = MAIKo2Decoder::EventWordsBuffer(wordsEvent);
-
-        if (!evt.words.IsValid())
-        {
-            result.eventFormatError = true;
-            return result;
-        }
-        auto doContinue = _callBack(evt);
-        if (!doContinue)
-        {
-            result.abortedByCallBack = true;
-            return result;
-        }
-    }
-    result.goodFlag = true;
-    return result;
-};
-
-struct RawEventsRecord
-{
-    uint32_t run_id;
-    uint32_t plane_id;
-    uint32_t board_id;
-    uint32_t file_number;
-    uint64_t event_id;
-    uint64_t event_data_address;
-    uint32_t event_data_length;
-    uint32_t event_fadc_words_offset;
-    uint32_t event_tpc_words_offset;
-    uint32_t event_clock_counter;
-    uint32_t event_trigger_counter;
-};
-
-std::string MakeZeroFilledUnsignedInteger(unsigned int _num, unsigned int _digits)
-{
-    std::ostringstream tmp;
-    tmp << std::setw(_digits) << std::setfill('0') << _num;
-    return tmp.str();
-}
-
-// _fmt is the format of filename
-//     $[run_id] in _fmt is replaced with _run_id in of _run_id_digits integer filled with '0'
-//     $[plane] is replaced with _planeList[_plane_id]
-//     $[board_id] in _fmt is replaced with _board_id in of _board_id_digits integer filled with '0'
-//     $[file_number] in _fmt is replaced with _file_number in of _file_number_digits integer filled with '0'
-std::string GenerateFileName(const std::string &_fmt,
-                             unsigned int _run_id, unsigned int _run_id_digits,
-                             unsigned int _plane_id, const std::map<unsigned int, std::string> &_planeList,
-                             unsigned int _board_id, unsigned int _board_id_digits,
-                             unsigned int _file_number, unsigned int _file_number_digits)
-{
-    std::string result(_fmt);
-    result = std::regex_replace(result, std::regex(R"(\$\[run_id\])"),
-                                MakeZeroFilledUnsignedInteger(_run_id, _run_id_digits));
-    if (_planeList.find(_plane_id) != _planeList.end())
-        result = std::regex_replace(result, std::regex(R"(\$\[plane\])"),
-                                    _planeList.at(_plane_id));
-    result = std::regex_replace(result, std::regex(R"(\$\[board_id\])"),
-                                MakeZeroFilledUnsignedInteger(_board_id, _board_id_digits));
-    result = std::regex_replace(result, std::regex(R"(\$\[file_number\])"),
-                                MakeZeroFilledUnsignedInteger(_file_number, _file_number_digits));
-
-    return result;
-}
-
-struct RawFilesRecord
-{
-    uint32_t run_id;
-    uint32_t plane_id;
-    uint32_t board_id;
-    uint32_t file_number;
-    std::string file_path;
-};
-
 struct ResultsOfThread
 {
-    std::vector<StreamRawDataResult> stream_results;
-    std::vector<RawEventsRecord> records;
-    std::vector<RawFilesRecord> files;
+    std::vector<MAIKo2Decoder::StreamRawDataResult> stream_results;
+    std::vector<MAIKo2Decoder::RawEventsRecord> records;
+    std::vector<MAIKo2Decoder::RawFilesRecord> files;
 };
 
 int main(int argc, char *argv[])
@@ -381,11 +179,11 @@ int main(int argc, char *argv[])
                     ResultsOfThread resultsOfThread;
                     while (true)
                     {
-                        std::string fileName = GenerateFileName("uTPC_$[run_id]_$[plane]$[board_id]_$[file_number].raw",
-                                                                run_id, 4,
-                                                                iPlane, planeList,
-                                                                iBoard, 1,
-                                                                file_number, 5);
+                        std::string fileName = MAIKo2Decoder::GenerateFileName("uTPC_$[run_id]_$[plane]$[board_id]_$[file_number].raw",
+                                                                               run_id, 4,
+                                                                               iPlane, planeList,
+                                                                               iBoard, 1,
+                                                                               file_number, 5);
 
                         std::string filePath = data_directory_path;
                         filePath += "/";
@@ -397,24 +195,24 @@ int main(int argc, char *argv[])
                                 break;
                         }
 
-                        StreamRawDataInput inp;
+                        MAIKo2Decoder::StreamRawDataInput inp;
                         inp.fileName = filePath;
-                        RawFilesRecord rec_files;
+                        MAIKo2Decoder::RawFilesRecord rec_files;
                         rec_files.run_id = _run_id;
                         rec_files.plane_id = _iPlane;
                         rec_files.board_id = iBoard;
                         rec_files.file_number = file_number;
                         rec_files.file_path = filePath;
 
-                        std::vector<RawEventsRecord> recs;
+                        std::vector<MAIKo2Decoder::RawEventsRecord> recs;
                         // Record template
-                        RawEventsRecord rec_temp;
+                        MAIKo2Decoder::RawEventsRecord rec_temp;
                         rec_temp.run_id = _run_id;
                         rec_temp.plane_id = _iPlane;
                         rec_temp.board_id = iBoard;
                         rec_temp.file_number = file_number;
 
-                        std::function<bool(RawEventData)> callBack = [&recs, rec_temp](const RawEventData &evt)
+                        std::function<bool(MAIKo2Decoder::RawEventData)> callBack = [&recs, rec_temp](const MAIKo2Decoder::RawEventData &evt)
                         {
                             MAIKo2Decoder::CounterData counter(evt.words.GetCounterWords());
                             MAIKo2Decoder::FADCData fadc(evt.words.GetFADCWords());
@@ -431,7 +229,7 @@ int main(int argc, char *argv[])
                                 return false;
                             }
 
-                            RawEventsRecord rec = rec_temp;
+                            MAIKo2Decoder::RawEventsRecord rec = rec_temp;
                             rec.event_id = evt.event_id;
                             rec.event_data_address = evt.event_data_address;
                             rec.event_data_length = evt.event_data_length;
@@ -494,16 +292,16 @@ int main(int argc, char *argv[])
 
     return 0;
 
-    StreamRawDataInput inp;
+    MAIKo2Decoder::StreamRawDataInput inp;
     inp.fileName = "../../../data/uTPC_0073_anode1_00000.raw";
 
-    std::vector<RawEventsRecord> recs;
+    std::vector<MAIKo2Decoder::RawEventsRecord> recs;
     // Record template
-    RawEventsRecord rec_temp;
+    MAIKo2Decoder::RawEventsRecord rec_temp;
     rec_temp.run_id = 40;
     rec_temp.plane_id = 0;
     rec_temp.board_id = 0;
-    std::function<bool(RawEventData)> callBack = [&recs, rec_temp](const RawEventData &evt)
+    std::function<bool(MAIKo2Decoder::RawEventData)> callBack = [&recs, rec_temp](const MAIKo2Decoder::RawEventData &evt)
     {
         MAIKo2Decoder::CounterData counter(evt.words.GetCounterWords());
         MAIKo2Decoder::FADCData fadc(evt.words.GetFADCWords());
@@ -528,7 +326,7 @@ int main(int argc, char *argv[])
             return false;
         }
 
-        RawEventsRecord rec = rec_temp;
+        MAIKo2Decoder::RawEventsRecord rec = rec_temp;
         rec.event_id = evt.event_id;
         rec.event_data_address = evt.event_data_address;
         rec.event_data_length = evt.event_data_length;

@@ -2,7 +2,7 @@
 # Setup the project
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(postprocessor)
-set(CMAKE_CXX_STANDARD 14) # ???
+set(CMAKE_CXX_STANDARD 17) # ???
 set(CMAKE_CXX_FLAGS "-Wall -std=c++17") # ???
 
 #----------------------------------------------------------------------------
@@ -38,3 +38,7 @@ target_link_libraries(test_bench pthread)
 # target_link_libraries(test_bench ${ROOT_LIBRARIES})
 # target_link_libraries(test_bench sqlite3)
 # target_link_libraries(test_bench uuid)
+
+add_executable(make_index make_index.cpp ${sources} ${headers})
+target_link_libraries(make_index pqxx)
+target_link_libraries(make_index pthread)
