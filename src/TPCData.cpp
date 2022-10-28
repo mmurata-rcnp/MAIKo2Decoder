@@ -16,28 +16,51 @@ namespace MAIKo2Decoder
             {
                 WordType headerWord = *it;
                 std::array<WordType, 4> words;
-                words.at(0) = *(it + 1); // strip 000 -- 031
-                words.at(1) = *(it + 2); // strip 032 -- 063
-                words.at(2) = *(it + 3); // strip 064 -- 095
-                words.at(3) = *(it + 4); // strip 096 -- 127
+                // words.at(0) = *(it + 1); // strip 000 -- 031
+                // words.at(1) = *(it + 2); // strip 032 -- 063
+                // words.at(2) = *(it + 3); // strip 064 -- 095
+                // words.at(3) = *(it + 4); // strip 096 -- 127
+
+                words.at(0) = *(it + 1); // strip 127 -- 096
+                words.at(1) = *(it + 2); // strip 095 -- 064
+                words.at(2) = *(it + 3); // strip 063 -- 032
+                words.at(3) = *(it + 4); // strip 031 -- 000
 
                 if (CheckHeaderFormat(headerWord))
                 {
                     auto clock = GetClock(headerWord);
+
+                    // // 32 bit (8 is number of bits in char type variable)
+                    // const auto nBitsWord = sizeof(words.at(0)) * 8;
+                    // for (unsigned int iWord = 0; iWord < words.size(); ++iWord)
+                    // {
+                    //     // shift 32 strips for each words
+                    //     const unsigned int stripShift = iWord * nBitsWord;
+                    //     auto word = words.at(iWord);
+                    //     for (unsigned int iBit = 0; iBit < nBitsWord; ++iBit)
+                    //     {
+                    //         const unsigned int stripInner = iBit;
+                    //         // Position of the bit. Count from the most significant bit.
+                    //         const unsigned int bitShift = iBit;
+                    //         if (word & (0x80000000 >> (bitShift)))
+                    //         {
+                    //             fTPCHits.push_back(Hit(stripInner + stripShift, clock));
+                    //         }
+                    //     }
+                    // }
 
                     // 32 bit (8 is number of bits in char type variable)
                     const auto nBitsWord = sizeof(words.at(0)) * 8;
                     for (unsigned int iWord = 0; iWord < words.size(); ++iWord)
                     {
                         // shift 32 strips for each words
-                        const unsigned int stripShift = iWord * nBitsWord;
+                        const unsigned int stripShift = (words.size() - iWord) * nBitsWord;
                         auto word = words.at(iWord);
+                        // iBit : Position of the bit. Count from the least significant bit.
                         for (unsigned int iBit = 0; iBit < nBitsWord; ++iBit)
                         {
                             const unsigned int stripInner = iBit;
-                            // Position of the bit. Count from the most significant bit.
-                            const unsigned int bitShift = iBit;
-                            if (word & (0x80000000 >> (bitShift)))
+                            if (word & (0x00000001 << (iBit)))
                             {
                                 fTPCHits.push_back(Hit(stripInner + stripShift, clock));
                             }
@@ -69,5 +92,18 @@ namespace MAIKo2Decoder
         {
             fGood = false;
         }
+    }
+
+    TPCData::TPCData(const TPCData &_rhs)
+        : fGood(_rhs.fGood), fEmpty(_rhs.fEmpty), fTPCHits(_rhs.fTPCHits),
+          fErrorLog(_rhs.fErrorLog.str()){};
+
+    TPCData &TPCData::operator=(const TPCData &_rhs)
+    {
+        fGood = _rhs.fGood;
+        fEmpty = _rhs.fEmpty;
+        fTPCHits = _rhs.fTPCHits;
+        fErrorLog = std::ostringstream(_rhs.fErrorLog.str());
+        return *this;
     }
 }

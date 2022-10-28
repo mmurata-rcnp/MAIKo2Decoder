@@ -72,4 +72,16 @@ namespace MAIKo2Decoder
             fGood = false;
         }
     }
+
+    FADCData::FADCData(const FADCData &_rhs)
+        : fGood(_rhs.fGood), fEmpty(_rhs.fEmpty), fSignals(_rhs.fSignals), fErrorLog(_rhs.fErrorLog.str()) {}
+
+    FADCData &FADCData::operator=(const FADCData &_rhs)
+    {
+        fGood = _rhs.fGood;
+        fEmpty = _rhs.fEmpty;
+        fSignals = _rhs.fSignals;
+        fErrorLog = std::ostringstream(fErrorLog.str());
+        return *this;
+    }
 }

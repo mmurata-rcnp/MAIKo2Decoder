@@ -10,6 +10,8 @@ namespace MAIKo2Decoder
     public:
         TPCData() : fGood(false), fEmpty(true), fTPCHits(), fErrorLog(){};
         TPCData(const std::vector<WordType> &_words);
+        TPCData(const TPCData &_rhs);
+        TPCData &operator=(const TPCData &_rhs);
 
         bool IsGood() const { return fGood; };
         bool IsEmpty() const { return fEmpty; };
