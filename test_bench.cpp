@@ -118,7 +118,7 @@ struct EventIndex
     uint32_t plane_id;
     uint32_t board_id;
     std::string file_path;
-    uint32_t event_data_address;
+    uint64_t event_data_address;
     uint32_t event_data_length;
     uint32_t event_fadc_words_offset;
     uint32_t event_tpc_words_offset;
