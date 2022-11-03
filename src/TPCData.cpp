@@ -1,5 +1,6 @@
 #include "TPCData.hpp"
 #include <array>
+#include <sstream>
 
 namespace MAIKo2Decoder
 {
@@ -69,22 +70,26 @@ namespace MAIKo2Decoder
                 }
                 else
                 {
-                    fErrorLog << "Format error in " << (it - _words.begin()) / 5 << " th clock " << std::endl;
-                    fErrorLog << "    Header " << std::hex << headerWord << ", "
-                              << "Format " << (0xffff0000 & headerWord) << " (== 0x80000000?), " << std::dec << std::endl;
-                    fErrorLog << "    word1 " << std::dec << words.at(0) << std::dec << std::endl;
-                    fErrorLog << "    word2 " << std::dec << words.at(1) << std::dec << std::endl;
-                    fErrorLog << "    word3 " << std::dec << words.at(2) << std::dec << std::endl;
-                    fErrorLog << "    word4 " << std::dec << words.at(3) << std::dec << std::endl;
+                    std::ostringstream tmpErrorLog;
+                    tmpErrorLog << "Format error in " << (it - _words.begin()) / 5 << " th clock " << std::endl;
+                    tmpErrorLog << "    Header " << std::hex << headerWord << ", "
+                                << "Format " << (0xffff0000 & headerWord) << " (== 0x80000000?), " << std::dec << std::endl;
+                    tmpErrorLog << "    word1 " << std::dec << words.at(0) << std::dec << std::endl;
+                    tmpErrorLog << "    word2 " << std::dec << words.at(1) << std::dec << std::endl;
+                    tmpErrorLog << "    word3 " << std::dec << words.at(2) << std::dec << std::endl;
+                    tmpErrorLog << "    word4 " << std::dec << words.at(3) << std::dec << std::endl;
+                    fErrorLog += tmpErrorLog.str();
                 }
             }
         }
         else
         {
-            fErrorLog << "Format error: The length of TPC data must be 5n, but that of this event is " << _words.size() << std::endl;
+            std::ostringstream tmpErrorLog;
+            tmpErrorLog << "Format error: The length of TPC data must be 5n, but that of this event is " << _words.size() << std::endl;
+            fErrorLog += tmpErrorLog.str();
         }
         // Check Validity (No error log?)
-        if (fErrorLog.str() == "")
+        if (fErrorLog == "")
         {
             fGood = true;
         }
@@ -96,14 +101,14 @@ namespace MAIKo2Decoder
 
     TPCData::TPCData(const TPCData &_rhs)
         : fGood(_rhs.fGood), fEmpty(_rhs.fEmpty), fTPCHits(_rhs.fTPCHits),
-          fErrorLog(_rhs.fErrorLog.str()){};
+          fErrorLog(_rhs.fErrorLog){};
 
     TPCData &TPCData::operator=(const TPCData &_rhs)
     {
         fGood = _rhs.fGood;
         fEmpty = _rhs.fEmpty;
         fTPCHits = _rhs.fTPCHits;
-        fErrorLog = std::ostringstream(_rhs.fErrorLog.str());
+        fErrorLog = _rhs.fErrorLog;
         return *this;
     }
 }

@@ -1,4 +1,5 @@
 #include "FADCData.hpp"
+#include <sstream>
 
 namespace MAIKo2Decoder
 {
@@ -33,29 +34,33 @@ namespace MAIKo2Decoder
                 }
                 else
                 {
-                    fErrorLog << "Format Error in " << (it - _words.begin()) / 2 << " th clock " << std::endl;
-                    fErrorLog << "    0: " << std::hex << sWord0 << ", "
-                              << "Format " << (0xc000 & sWord0) << " (== 0x4000?), " << std::dec
-                              << "Channel " << GetChannel(sWord0) << " (== 0?), "
-                              << "Signal " << GetSignal(sWord0) << std::endl;
-                    fErrorLog << "    1: " << std::hex << sWord1 << ", "
-                              << "Format " << (0xc000 & sWord1) << " (== 0x4000?), " << std::dec
-                              << "Channel " << GetChannel(sWord1) << " (== 1?), "
-                              << "Signal " << GetSignal(sWord1) << std::endl;
-                    fErrorLog << "    2: " << std::hex << sWord1 << ", "
-                              << "Format " << (0xc000 & sWord2) << " (== 0x4000?), " << std::dec
-                              << "Channel " << GetChannel(sWord2) << " (== 2?), "
-                              << "Signal " << GetSignal(sWord2) << std::endl;
-                    fErrorLog << "    3: " << std::hex << sWord3 << ", "
-                              << "Format " << (0xc000 & sWord3) << " (== 0x4000?), " << std::dec
-                              << "Channel " << GetChannel(sWord3) << " (== 3?), "
-                              << "Signal " << GetSignal(sWord3) << std::endl;
+                    std::ostringstream tmpErrorLog;
+                    tmpErrorLog << "Format Error in " << (it - _words.begin()) / 2 << " th clock " << std::endl;
+                    tmpErrorLog << "    0: " << std::hex << sWord0 << ", "
+                                << "Format " << (0xc000 & sWord0) << " (== 0x4000?), " << std::dec
+                                << "Channel " << GetChannel(sWord0) << " (== 0?), "
+                                << "Signal " << GetSignal(sWord0) << std::endl;
+                    tmpErrorLog << "    1: " << std::hex << sWord1 << ", "
+                                << "Format " << (0xc000 & sWord1) << " (== 0x4000?), " << std::dec
+                                << "Channel " << GetChannel(sWord1) << " (== 1?), "
+                                << "Signal " << GetSignal(sWord1) << std::endl;
+                    tmpErrorLog << "    2: " << std::hex << sWord1 << ", "
+                                << "Format " << (0xc000 & sWord2) << " (== 0x4000?), " << std::dec
+                                << "Channel " << GetChannel(sWord2) << " (== 2?), "
+                                << "Signal " << GetSignal(sWord2) << std::endl;
+                    tmpErrorLog << "    3: " << std::hex << sWord3 << ", "
+                                << "Format " << (0xc000 & sWord3) << " (== 0x4000?), " << std::dec
+                                << "Channel " << GetChannel(sWord3) << " (== 3?), "
+                                << "Signal " << GetSignal(sWord3) << std::endl;
+                    fErrorLog += tmpErrorLog.str();
                 }
             }
         }
         else
         {
-            fErrorLog << "Format error: The length of FADC data must be 2n, but that of this event is " << _words.size() << std::endl;
+            std::ostringstream tmpErrorLog;
+            tmpErrorLog << "Format error: The length of FADC data must be 2n, but that of this event is " << _words.size() << std::endl;
+            fErrorLog += tmpErrorLog.str();
         }
 
         // Check validity
@@ -63,7 +68,7 @@ namespace MAIKo2Decoder
         const int signalLengthExpected = _words.size() / 2;
         const int signalLengthAccepted = fSignals.at(0).size();
         if (signalLengthExpected == signalLengthAccepted &&
-            fErrorLog.str() == "")
+            fErrorLog == "")
         {
             fGood = true;
         }
@@ -74,14 +79,14 @@ namespace MAIKo2Decoder
     }
 
     FADCData::FADCData(const FADCData &_rhs)
-        : fGood(_rhs.fGood), fEmpty(_rhs.fEmpty), fSignals(_rhs.fSignals), fErrorLog(_rhs.fErrorLog.str()) {}
+        : fGood(_rhs.fGood), fEmpty(_rhs.fEmpty), fSignals(_rhs.fSignals), fErrorLog(_rhs.fErrorLog) {}
 
     FADCData &FADCData::operator=(const FADCData &_rhs)
     {
         fGood = _rhs.fGood;
         fEmpty = _rhs.fEmpty;
         fSignals = _rhs.fSignals;
-        fErrorLog = std::ostringstream(fErrorLog.str());
+        fErrorLog = fErrorLog;
         return *this;
     }
 }

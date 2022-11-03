@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <sstream>
+#include <string>
 #include "DecoderFormat.hpp"
 
 namespace MAIKo2Decoder
@@ -27,13 +27,14 @@ namespace MAIKo2Decoder
 
         std::vector<Hit> GetHits() const { return fTPCHits; };
 
-        std::string GetErrorLog() const { return fErrorLog.str(); };
+        std::string GetErrorLog() const { return fErrorLog; };
 
     private:
         bool fGood;
         bool fEmpty;
         std::vector<Hit> fTPCHits;
-        std::ostringstream fErrorLog;
+        // std::ostringstream fErrorLog;
+        std::string fErrorLog;
         static bool CheckHeaderFormat(const WordType &_word) { return (_word & 0xffff0000) == 0x80000000; }
         static unsigned int GetClock(const WordType &_word) { return (_word & 0x0000ffff); };
     };

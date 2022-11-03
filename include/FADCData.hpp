@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <array>
-#include <sstream>
+#include <string>
 #include "DecoderFormat.hpp"
 
 namespace MAIKo2Decoder
@@ -26,14 +26,14 @@ namespace MAIKo2Decoder
                 return fSignals.at(_ch);
         }
 
-        std::string GetErrorLog() const { return fErrorLog.str(); };
+        std::string GetErrorLog() const { return fErrorLog; };
         inline static const uint32_t NumberOfChannels = 4;
 
     private:
         bool fGood;
         bool fEmpty;
         std::array<std::vector<ShortWordType>, NumberOfChannels> fSignals;
-        std::ostringstream fErrorLog;
+        std::string fErrorLog;
         static bool CheckFormat(const ShortWordType &_sWord) { return (_sWord & 0xc000) == 0x4000; }
         static int GetChannel(const ShortWordType &_sWord) { return (_sWord & 0x3000) >> 12; }
         static ShortWordType GetSignal(const ShortWordType &_sWord) { return (_sWord & 0x03ff); }
