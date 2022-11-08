@@ -507,6 +507,22 @@ int main(int argc, char *argv[])
         32u, 0., 2048.,
         "Cathode");
 
+    if (hitsA.size() > 0)
+    {
+
+        std::cout
+            << std::max_element(hitsA.begin(), hitsA.end(), [](Hit l, Hit r) -> bool
+                                { return l.strip < r.strip; })
+                   ->strip
+            << std::endl;
+
+        std::cout
+            << std::min_element(hitsA.begin(), hitsA.end(), [](Hit l, Hit r) -> bool
+                                { return l.strip < r.strip; })
+                   ->strip
+            << std::endl;
+    }
+
     std::istringstream isA(aaA);
     std::istringstream isC(aaC);
 

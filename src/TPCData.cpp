@@ -55,7 +55,7 @@ namespace MAIKo2Decoder
                     for (unsigned int iWord = 0; iWord < words.size(); ++iWord)
                     {
                         // shift 32 strips for each words
-                        const unsigned int stripShift = (words.size() - iWord) * nBitsWord;
+                        const unsigned int stripShift = (words.size() - 1 - iWord) * nBitsWord;
                         auto word = words.at(iWord);
                         // iBit : Position of the bit. Count from the least significant bit.
                         for (unsigned int iBit = 0; iBit < nBitsWord; ++iBit)
