@@ -1,0 +1,9 @@
+{
+    "Memo": "config file in cogito",
+    "dataDirectoryPath": "/home/quser/exp/maiko/2022Aut/data",
+    "rawDataFileFormat": "uTPC_$[run_id]_$[plane]$[board_id]_$[file_number].raw",
+    "optionsForConnectionToDB": "",
+    "nameOfRawEventsTable": "test.raw_events",
+    "nameOfPlanesTable": "test.planes",
+    "nameOfRawFilesTable": "test.raw_files"
+}
