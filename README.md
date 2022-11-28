@@ -8,7 +8,7 @@ By using "make_index", you can add records to the raw data index tables, which i
 ## Requirement
 - CMake
 
-- PostgresSQL
+- PostgreSQL
     - Role and database with the same name as your username
 
 - C++ Libraries 
